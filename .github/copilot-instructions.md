@@ -1,0 +1,1 @@
+All reviews, comments, and suggestions MUST be written in Korean (한국어). This is a strict requirement.
