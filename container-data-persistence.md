@@ -49,7 +49,8 @@ q???\̀O? ???h???	?A???h4??h4??h
 ### 왜 외계어를 썼을까
 그렇다면 왜 도커 파일시스템은 컨테이너 리소스 관리를 이렇게 개판(?)으로 해놓은 것일까? 볼륨을 잡았듯이 그냥 컨테이너별로 내부 구조를 그대로 옮겨놓으면 편하지 않을까? 
 
-그 이유는 짐작하겠지만 효율성 때문인데, 나중에 자세히 다루도록 하겠다.
+그 이유는 짐작하겠지만 효율성 때문인데, [도커 파일시스템 원리](docker-filesystem-mechanism.md)에서 알아본다.
+
 [Docker image layer caching](https://blog.macellan.net/docker-image-layer-caching-c471b1bd1f50)
 > Docker uses a content-addressable storage system to store and manage the image layers, which means that each layer is identified by its content, rather than its name or location. This allows Docker to reuse layers across different images and different builds, even if the images have different names or are stored in different locations.
 
