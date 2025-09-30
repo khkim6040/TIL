@@ -1,5 +1,9 @@
 ## cronjob 등록 시 유의사항(PATH)
 
+<p align="center">
+    <img src="assets/cron.png" width=100% height=100% text-align=center />
+</p>
+
 ### 요약
 1. cron이 실행될 때, 사용하는 PATH 환경변수는 매우 축소되어 있음
 2. 그러니 cron이 실행할 바이너리를 잘 찾게끔 PATH를 설정해 줘야 함
@@ -13,8 +17,8 @@
 한 번 발급받으면 90일 정도 유지되고 유효기간이 30일 이내로 남았을 때 재발급이 가능하다. 기존에는 원격 EC2 머신에 들어가서 `certbot renew`를 수동으로 해주고 있었다. 까먹고 있다가 유효기간이 만료되면 사이트 접속이 안되는 사고가 난다.
 
 <p align="center">
-    <img src="assets/cert-expired.png" width=50% height=100% text-align=center>
-<p>
+    <img src="assets/cert-expired.png" width=50% height=100% text-align=center />
+</p>
 
 ### certbot renew cronjob 등록 
 인간 오류가 생기기 쉬운 번거로운 작업을 방지하고자 머신에 `cronjob`을 등록했다. 
@@ -36,8 +40,8 @@ $ certbot renew --dry-run
 그런데.. 이상하게 재발급이 안 됐다.
 
 <p align="center">
-    <img src="assets/cert-expired.png" width=50% height=100% text-align=center>
-<p>
+    <img src="assets/cert-expired.png" width=50% height=100% text-align=center />
+</p>
 
 이번엔 머신에 접속 가능한 사람이 당장 없었고, 심지어 낮 시간이라 꽤나 큰 문제였다. 저녁 시간쯤 되어 해결되었지만, 대체 왜 자동 재발급이 안됐는지 알 수가 없었다.
 
