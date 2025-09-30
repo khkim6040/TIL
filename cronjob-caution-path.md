@@ -53,7 +53,7 @@ All renewals failed. The following certificates could not be renewed:
 1 renew failure(s), 0 parse failure(s)
 ```
 
-흠.. 뭔가 내부적으로 nginx 를 사용하고 있는 것 같다. 터미널에서 renew 했을 때는 잘 되는데 왜 cron 상에서는 안될까?
+흠.. 뭔가 내부적으로 nginx 를 사용하고 있는 것 같다. 우린 nginx로 도메인 관리를 하기 때문에 내부적으로 certbot의 nginx 플러그인을 사용하고, 이게 nginx를 호출한 것 같다. 터미널에서 renew 했을 때는 잘 되는데 왜 cron 상에서는 안될까?
 
 답은 cron의 환경변수가 일반 유저와 다르기 때문이었다. cron은 일반 유저의 PATH 값을 상속하지 않는다. 대신, 그 값이 [cron에는 매우 제한적으로 설정](https://serverfault.com/questions/337631/crontab-execution-doesnt-have-the-same-environment-variables-as-executing-user)되어 있어서 nginx binary를 찾지 못하고 실패했던 것이다. certbot과 systemctl은 binary 위치를 명시해 주었지만, renew 과정 내부에서 nginx를 사용하는데 이 때는 binary 경로가 명시되어있지 않아서 찾지 못하는 문제였던 것이다. 로컬에서는 PATH가 잘 설정되어 있어 nginx를 정상적으로 부를 수 있었다.
 
@@ -83,7 +83,7 @@ $ sudo crontab -l
 * * * * * env > /tmp/cron_env.txt
 ```
 
-결과를 보니 정말 PATH에 `/usr/sbin`이 없었다.
+결과를 보니 정말 PATH에 `/usr/sbin`이 없었다. 참고로 Amazon Linux 2 머신이다.
 ```sh
 $ cat /tmp/cron_env.txt 
 XDG_SESSION_ID=414146
