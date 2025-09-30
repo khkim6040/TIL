@@ -1,4 +1,4 @@
-## conjob 등록 시 유의사항(PATH)
+## cronjob 등록 시 유의사항(PATH)
 
 ### 요약
 1. cron이 실행될 때, 사용하는 PATH 환경변수는 매우 축소되어 있음
