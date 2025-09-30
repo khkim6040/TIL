@@ -105,6 +105,6 @@ _=/usr/bin/env
 
 #### `/sbin`, `/bin`의 차이
 둘 다 바이너리 폴더이다.  
-s는 superuser로, root를 위한 바이너리가 위치한 폴더로, 실행하려면 root 권한이 필요하다. `/usr/sbin`, `/usr/bin` 도 같은 맥락.  
+s는 superuser로, 주로 시스템 관리자(=root)가 실행하는 바이너리가 있다. 그러나 권한만 된다면 일반 유저도 `/sbin`에 위치한 바이너리를 실행할 수 있다.  `/usr/sbin`, `/usr/bin` 도 같은 맥락.  
 
 [참고: Differences between /bin, /sbin, /usr/bin, /usr/sbin, /usr/local/bin, /usr/local/sbin](https://askubuntu.com/questions/308045/differences-between-bin-sbin-usr-bin-usr-sbin-usr-local-bin-usr-local)
