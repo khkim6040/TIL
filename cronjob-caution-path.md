@@ -45,7 +45,7 @@ $ certbot renew --dry-run
 ### 원인 분석
 로그를 찾아봤다. renew 과정에서 nginx를 못 찾는다고 한다.
 ```sh
-$ /var/log/certbot-cron.log
+$ cat /var/log/certbot-cron.log
 Failed to renew certificate api.paxi.popo-dev.poapper.club with error: The nginx plugin is not working; there may be problems with your existing configuration.
 The error was: NoInstallationError("Could not find a usable 'nginx' binary. Ensure nginx exists, the binary is executable, and your PATH is set correctly.")
 All renewals failed. The following certificates could not be renewed:
