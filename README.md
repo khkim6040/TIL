@@ -5,3 +5,5 @@
 
 
 [cronjob 등록 시 유의사항(PATH)](cronjob-caution-path.md)
+
+[비밀번호 찾기 기능은 필요한가?](is-password-finding-feature-necessary.md)
