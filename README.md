@@ -7,3 +7,7 @@
 [cronjob 등록 시 유의사항(PATH)](cronjob-caution-path.md)
 
 [비밀번호 찾기 기능은 필요한가?](is-password-finding-feature-necessary.md)
+
+[트랜잭션과 동시성](transaction-and-concurrency.md)
+
+[정규표현식을 공부하자](regex.md)
