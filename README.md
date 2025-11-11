@@ -8,6 +8,10 @@
 
 [비밀번호 찾기 기능은 필요한가?](is-password-finding-feature-necessary.md)
 
-[트랜잭션과 동시성](transaction-and-concurrency.md)
+[트랜잭션과 동시성은 다르다](transaction-and-concurrency.md)
 
 [정규표현식을 공부하자](regex.md)
+
+[운영체제 책 정리](os.md)
+
+[vevn 사용하기](how-to-venv.md)
