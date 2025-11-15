@@ -286,16 +286,126 @@ In total, ~= 256.5 TB
 13.3.3 NTFS: Flexible Tree With Extents
 디스크 전체의 비트맵을 메모리에 유지하는 것은 공간 상 비현실적이다. 탐색 비용도 큼
 13.3.4 Copy-On-Write File Systems
+디스크는 Random small write 보다 large sequential write할 때 성능이 더 좋다. 디스크의 용량(bandwidth)은 쉽게 커지는 반면, 탐색 및 작성을 위한 디스크 회전 속도(seek time, rotational latency)는 그렇지 않기 때문.
+
+메모리 캐시로 읽기를 disk I/O 없이 쳐내는 것과 다르게 메모리 쓰기는 데이터 영속성을 위해 짧은 주기로 flush 해줘야 하기 때문에 병목은 읽기보다 쓰기에 몰림. 
+쓰기 비용 >> 읽기 비용이기 때문에 쓰기를 최적화 해야 함
+
+특정 위치에 고정되어 있는 inode 배열을 이 COW 시스템에서는 파일처럼 관리해서 고정되어있지 않게 바꾼다. write가 일어나서 블럭이 하나 생성되었다면, 그 블럭부터 root 까지 향하면서 만나는 모든 노드를 새롭게 작성한다. 이 때 디스크에 sequential하게 작성됨. 한 번에 작성해야 하는 데이터가 많지만, 
+> sequential write 의 소요 시간 >>>> 그때그때 random write를 여러 번 하는 시간   
+
+이므로 많은 데이터를 쓰더라도 random access를 피하는 것이 더 나음. 
+
+<p align="center">
+    <img src="assets/COW-inode-write.png" width=100% height=100% text-align=center />
+</p>
+
+### ZFS
+COW를 구현한 파일 시스템 오픈소스 
+
+#### ZFS index structures
+<p align="center">
+    <img src="assets/zfs-update.png" width=100% height=100% text-align=center />
+</p>
+
+Q. 위 사진과 같이 하나의 블럭 write가 일어나면 모든 부모가 새롭게 써지는 블럭 이외 다른 블럭으로 포인터는 유지한 채로 새로운 위치에 써진다. 그렇다는 말은 기존 부모의 값들을 디스크에서 읽어야 하지 않을까? 즉, COW 과정에서 random read 가 많이 일어나지 않나?
+
+A. random read가 발생하는 것은 맞지만 블럭 작성 시 대부분의 node 정보는 메모리에 올라와 있기에 디스크 random read는 일어나지 않는다. 메모리에서 읽어오고 디스크 순차 작성 가능함.
+
+#### ZFS space map.
+아무리 비트 하나로 4KB 짜리 free 블럭을 관리한다고 해도 디스크 용량이 커진다면 메모리에 보관해야 할 비트맵의 크기도 선형적으로 커지는 문제가 있다. ex) 1PB 디스크의 free 블럭을 관리하기 위한 비트맵의 크기 = 2^50 / 2^12 = 2^38 = 256GB
+
+Q. 비트맵 모두를 메모리에 올리지 않고 쪼개서 일부만 메모리에 올리면 되지 않나?
+A. 그렇게 하면 할당은 메모리에 올라온 비트맵을 이용함으로써 효율적으로 할 수 있을 것이다. 그러나 이미 할당된 후 할당 해제되는 블럭의 경우, 메모리에 올라와 있지 않은 비트맵의 블럭일 가능성이 높으므로, 이 때는 disk random access 및 write 가 일어나는 문제가 있다. 
+
+ZFS에서는 비트맵 크기, free의 랜덤 disk 엑세스 문제를 해결하기 위해,
+- 블럭단위가 아닌 블럭을 묶은 block group 단위로 각각 free blocks를 관리
+- 블럭 별 비트맵이 아닌 연속적으로 비어있는 블럭들을 하나로 묶은 범위 형태인 extents를 관리
+- free 시 disk에 접근하지 않고 메모리에 append-only log로 정보만 남겨놓는다. 다른 block group이 나중에 메모리에 올라왔을 때 로그를 읽으면서 해당 block group을 업데이트하고, 메모리에서 빠질 때 자연스럽게 디스크에 업데이트 되도록 한다.
+
+
 13.4 Putting It All Together: File and Directory Access
+일반적인 inode 파일 구조에서 특정 파일(`/foo/bar/baz`)을 읽기까지의 과정을 생각해보자. 이름: inode number 매핑을 생각하면서 진행하면 된다. inode 파일을 읽고, 거기에 있는 파일 블럭 포인터를 읽은 후 그 쪽 파일을 읽는다. 만약, 파일이라면 내용이 써져 있을 것이고, 디렉토리라면 name: inode number 매핑이 저장되어 있을 것이다. 이렇게 쭉쭉 따라가면 된다.
+<p align="center">
+    <img src="assets/file-system-example.png" width=100% height=100% text-align=center />
+</p>
+root 폴더는 inode number = 2로 고정되어 있으니
+
+
 13.5 Summary and Future Directions
 Exercises
 
 
 14 Reliable Storage
+지금까지는 하드웨어는 100% 데이터를 영구적으로 안전하게 보유할 수 있다고 생각했다. 그런게 어떻게 이것이 가능할까? 이제부터 그것을 알아보자. 
+Reliability: 의도한 기능을 할 수 있는지, 하드웨어의 경우 데이터를 읽어들이고 작성할 수 있는지 여부 <- 우리가 알아볼 부분
+Availability: 요청에 빠르게 응답할 수 있는지, 이 경우 I/O 요청에 얼마나 빠르게 응답하는지 여부
+
+Reliability를 위협하는 것은 두 가지가 있다.
+1. Update 중간에 종료되는 경우
+2. 저장된 데이터가 오염되는 경우
+
+아래 방법들로 각각을 해결할 수 있다.
+1. 원자적(Atomic) 쓰기
+2. 중복성(Redundancy) 성취
+
 14.1 Transactions: Atomic Updates
+먼저 파일이 생성될 때 어떤 일이 일어나는지 알아보자.
+1. inode bitmap에서 free block을 찾고 allocated로 상태를 바꾼다.
+2. inode entry를 할당하고 초기화한다.
+3. 파일이 만들어진 디렉토리에 1에서 할당받은 inode number를 filename 과 매핑한다.
+즉, 세 번의 disk write가 일어난다. 또한, 아직 파일의 메타데이터를 알려주는 inode만 만들어졌고 실물 파일은 만들어지지 않은 상태다. 어플리케이션에서 write() 시스템 콜로 파일에 실제로 내용을 작성하면,
+1. free data block bitmap에서 free block을 찾고 allocated로 바꾼다.
+2. data block을 할당하고 주어진 내용으로 초기화한다. 
+3. inode entry의 data 필드가 2에서 새로 만든 block을 참조하게 한다.
+이것도 3번의 disk write가 일어난다. 이후 write()가 호출될 때도 위와 같이 3번의 write가 일어난다. 기존 내용을 덮어쓰는 것이 아닌 새로운 블럭을 할당받고 append 하는 식으로 작동하기 때문
+
+이처럼 하나의 operation을 할 때 write 가 여러 번 일어난다는 뜻은 reliability의 관점에서 봤을 때 그 다음 write가 일어나기 전에 시스템이 종료됐을 때를 고려해야 한다는 의미가 된다.
+
 14.1.1 Ad Hoc Approaches
+이런 문제를 위해 작성된 범용적이지 않은 해결 방법 시스템이다. 시스템이 종료되고 재부팅될 때 모든 파일의 메타데이터를 살펴보고 이상이 있는 부분을 롤백함으로써 reliability를 달성한다. 예를 들면, 파일을 생성할 때 2번 inode entry를 할당한 뒤 시스템이 종료되었다면, 해당 inode 엔트리는 어느 디렉토리에도 속하지 않은 상태가 된다. 이 시스템은 모든 파일을 살펴보면서 이런 이상 현상을 발견하고 적절하게 조치한다. 이 예에서는 할당되었지만 어디에도 속하지 않은 inode entry를 할당 해제함으로써 해결한다. 이런 시스템의 예시로는 FFS(Unix Fast File System)의 fsck(file system check)가 있다. 
+
+예상할 수 있다시피 이런 시스템에서는 명확한 단점이 있다. 
+- 모든 가능한 상황을 고려하고 복구하는 시나리오를 짜야 하므로 시스템이 엄청나게 복잡해질 수 있다. 
+- 이 시스템이 동작하기 위해서는 각각의 쓰기 작업이 차례차례 디스크에 작성 완료된 후 다음 쓰기를 작성해야 한다. 즉, bulk sequential write를 하지 못하고 개별 random write를 해야 한다. 비용이 높아진다.
+- 마지막이자 이 시스템이 힘을 잃은 가장 큰 이유는, 재부팅 될 때마다 디스크의 모든 파일을 읽어야 하기 때문이다. 디스크 용량이 기하급수적으로 커짐에 따라 현대 서버에서 매 부팅마다 모든 파일을 읽히는 비용은 말이 안되게 되었다.
+
+
 14.1.2 The Transaction Abstraction
+하드웨어에서와 같이 여기서 말하는 트랜잭션도 여러 가지의 작업을 한 개로 묶어서 한 번에 처리해주는 기능이다.
+
 14.1.3 Implementing Transactions
+트랜잭션이 끝났다고 해서 그 결과가 바로 디스크에 반영되는 것은 아니다. Commit과 Write back이 이뤄져야 디스크에 변경 사항이 반영된다.  
+Commit은 일련의 트랜잭션이 끝난 후 디스크의 로그 영역에 변경된 데이터가 적혀진 상태로, 크래시가 나더라도 디스크에 적힌 로그를 보면서 트랜잭션이 끝난 상태로 되돌릴 수 있는 durability를 보장한다. 중요한 점은 아직 변경된 파일은 메모리에만 있고 디스크에는 적용되지 않는다. 
+Write back 단계에서 메모리에 있는 commit된 변경 사항을 디스크로 적용시킨다. 이를 `redo logging`이라 한다.
+
+예상하겠지만 이렇게 하는 이유는 성능 떄문인데, commit할 때마다 디스크에 동기화하면 disk write가 트랜잭션마다 일어나기 때문에 비효율적이기 때문이다. 따라서 최소한의 durability 를 보장하기 위해 작은 로그를 특정 디스크 공간에 저장해두고 실제로 변경 사항을 디스크에 반영시키는 것은 비동기적으로 적절한 시간에 여러 변경사항이 함께 묶여 진행된다. 이외에도 변경 사항들을 한꺼번에 디스크에 적용함으로써 bulk writing의 이점도 가져갈 수 있다.
+
+Q. Commit 시 로그에 담긴 데이터와 Write back 시에 적히는 데이터가 같나? 같다면 공간 낭비 아닌가? 왜 그렇게 하는가?
+A. 맞다. 로그와 write back 시 쓰이는 데이터는 실제로 같아야 한다. 그게 Commit의 목적이기 때문인데, commit 후 크래시가 났다면 로그의 데이터를 보면서 디스크를 복구해야 하기 때문이다. write back이 끝난 로그는 지움으로써 공간을 확보한다.
+
+Q. commit 후, write back 전에 크래시가 났다고 가정해보자. 복구 시 이 변경 사항은 디스크에 반영해야 하나, 반영하지 않아야 하나?
+A. 반영해야 한다. 복구 시 작성된 로그를 따라가면서 디스크에 적용한다. 흥미로운 점은 DBMS의 복구 방법은 이런 파일 시스템의 복구 방법과 다르다는 것인데, DBMS는 비슷한 상황에서 롤백을 하기도 한다. 복구 시 파일 시스템은 롤백이 필요 없고, DBMS는 롤백이 필요해 DBMS의 트랜잭션 로깅이 파일 시스템의 로깅보다 훨씬 복잡하다.
+
+Q. 트랜잭션이 쌓이면서 로그가 비대해질 것이다. 로그가 비대해지면 디스크 공간뿐만 아니라, 크래시에서 복구(recovery)할 때 읽어야 하는 로그의 양이 많아지고, 이는 시간 상으로도 손해가 클 것 같다. 어떻게 해결할까?  
+A. 트랜잭션을 진행하면서 로그의 양을 줄임으로써 해결한다. Write back이 끝난 로그는 이미 디스크에 적용되어 있으므로, 그 다음에 진행하면서 크래시가 일어나도 디스크에 그대로 데이터가 남아 있을 것이다. 따라서 write back 까지 진행된 트랜잭션에 대한 로그는 지워도 된다.   
+내부 로그 가비지 콜렉터(Log GC)가 트랜잭션 로그 데이터의 각 트랜잭션을 보면서 
+1. 커밋되었는지
+2. 트랜잭션과 연관된 dirty page들이 모두 write back(=flush) 되었는지   
+
+확인하고 해당하는 트랜잭션은 로그에서 지운다. 
+
+트랜잭션 로그의 생애 주기는 다음과 같이 정리할 수 있다.  
+> 트랜잭션 실행 -> 로그 기록 -> Commit -> (시간차) Write back -> Garbage collection 가능
+
+<p align="center">
+    <img src="assets/transactional-log-structure.png" width=100% height=100% text-align=center />
+</p>
+
+위와 같이 메모리에서 log head, log tail 포인터를 관리한다. 종종 메모리의 log head 포인터를 디스크의 것과 동기화시킨다. 이 때 가비지 콜렉터는 디스크의 log head 포인터 이전의 공간을 메모리에서 안전하게 해제할 수 있다. 
+
+
+
 14.1.4 Transactions and File Systems
 14.2 Error Detection and Correction
 14.2.1 Storage Device Failures and Mitigation
