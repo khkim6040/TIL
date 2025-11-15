@@ -14,7 +14,7 @@
 
 [운영체제 책 정리](os.md)
 
-[vevn 사용하기](how-to-venv.md)
+[venv 사용하기](how-to-venv.md)
 
 [POSIX란 뭘까?](what-is-posix.md)
 
