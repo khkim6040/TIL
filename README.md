@@ -14,9 +14,6 @@
 
 [운영체제 책 정리](os.md)
 
-<<<<<<< Updated upstream
-[venv 사용하기](how-to-venv.md)
-=======
 [vevn 사용하기](how-to-venv.md)
 
 [POSIX란 뭘까?](what-is-posix.md)
@@ -24,4 +21,3 @@
 [DBMS는 파일 시스템인가?](is-dbms-filesystem.md)
 
 [N+1 문제란](what-is-n+1-problem.md)
->>>>>>> Stashed changes
