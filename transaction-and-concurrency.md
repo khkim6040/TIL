@@ -74,3 +74,8 @@ DB 쪽도 동시성 문제를 당연히 알고 있고, 읽기 수준과 쓰기 �
 실제로 이 문제를 해결하려면 `findOne` 시점에 `FOR UPDATE` 락을 걸거나, `currentParticipant` 업데이트 시 낙관적 락(Optimistic Lock)을 사용하는 등의 동시성 제어 방법이 필요하다.  
 
 다음에는 이 내용을 바탕으로 코드를 수정하고 실제로 어떻게 문제를 해결했는지, 동시성 관련 테스트 코드는 어떻게 작성하는지 공유해 보겠다.
+
+https://ruempler.eu/2024/11/25/solutions-to-the-lost-update-problem/
+
+완전히 좋은 포스트. lost update를 방지하기 위한 세 가지 방법을 알려줌. 
+isolation level은 SQL에서 Dirty Read, Non-repeatable Read, Phantom Read를 막기 위한 단계들을 정한 약속일 뿐이며 lost update는 여기에 속해있지 않으므로 DBMS마다 lost update를 막는 레벨은 상이할 수 있음. Postgres는 repeateble read에서 막아지고, mysql은 serializable까지 가야 막아짐. 이는 내부 구현 차이로 인한 것임

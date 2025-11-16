@@ -15,3 +15,9 @@
 [운영체제 책 정리](os.md)
 
 [venv 사용하기](how-to-venv.md)
+
+[POSIX란 뭘까?](what-is-posix.md)
+
+[DBMS는 파일 시스템의 일종으로 볼 수 있을까?](is-dbms-filesystem.md)
+
+[N+1 문제란](what-is-n+1-problem.md)
