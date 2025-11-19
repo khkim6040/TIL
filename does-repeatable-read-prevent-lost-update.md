@@ -11,9 +11,9 @@ Lost Update라는 동시성 문제가 있다. 트랜잭션 A, B가 같은 데이
 라고 생각했었다.  
 과연 맞나? **아니다.**
 
-## 논리의 오류: 읽기 일관성과 쓰기 충돌의 혼동
+## 읽기 일관성과 쓰기 충돌은 다르다
 
-위 논리의 핵심 오류는 **스냅샷 기반 읽기(Read Consistency)와 쓰기 충돌(Write-Write Conflict) 처리를 뒤섞은 것**이다.
+**스냅샷 기반 읽기(Read Consistency)와 쓰기 충돌(Write-Write Conflict) 처리를 뒤섞은 것**이 문제였다.
 
 RR이 어떻게 재현 가능한 읽기를 보장하는지 좀 더 알아보자. RR은 트랜잭션 시작 시점의 **스냅샷**을 사용함으로써 읽기를 재현 가능하게 한다. 즉, A가 데이터 변경 후 커밋한 후에도 B는 변경이 적용된 DB가 아닌 시작 시점에 찍어놨던 스냅샷을 사용해 읽기 때문에 처음에 읽었던 값을 유지할 수 있다. 최신 값이 아니라 예전에 획득했던 값을 재사용한다는 것이다.
 
@@ -25,7 +25,7 @@ SQL 표준 명세에 의하면 RR은 Non-Repeatable Read만 막으면 된다. Lo
 
 그렇지만?
 
-## 명세는 명세일 뿐, 구현은 다름
+## 명세는 명세일 뿐이고 구현은 다름
 
 같은 RR이라고 해도 DBMS마다 Lost Update 처리 방식이 완전히 다르다.
 
@@ -33,7 +33,7 @@ SQL 표준 명세에 의하면 RR은 Non-Repeatable Read만 막으면 된다. Lo
 
 Postgres는 RR 수준에서 **MVCC 기반 write-write conflict 검증**을 수행한다. UPDATE 시점에 해당 tuple의 MVCC 버전을 확인해서, 이미 다른 트랜잭션이 수정 중이거나 수정을 완료한 경우 serialization failure를 발생시켜 트랜잭션을 abort한다. 
 
-이것은 RR이어서가 아니라 **PostgreSQL의 MVCC 구현 방식** 때문이다. 사실상 PostgreSQL의 RR은 Snapshot Isolation(SI)에 일부 write conflict 검증을 더한 것으로, SQL 표준의 RR보다 더 강한 격리 수준으로 볼 수 있다.
+이것은 RR이어서가 아니라 **PostgreSQL의 MVCC 구현 방식** 때문이다. PostgreSQL의 RR은 Snapshot Isolation(SI)으로 구현되어 있고, SI는 쓰기에서 write conflict를 감지하고 대처할 수 있다.
 
 ### MySQL: RR에서 Lost Update를 못 막음
 
@@ -66,10 +66,12 @@ MySQL의 RR 수준에서 Lost Update를 막으려면 어플리케이션 레벨�
 
 2. 낙관적 락 (Version Column)
    - 데이터에 버전 컬럼을 추가하고, UPDATE 시 버전을 조건에 포함
-   - 버전이 맞지 않으면 UPDATE가 실패하므로 어플리케이션에서 재시도 로직 처리
+   - 스냅샷을 통해 여전히 이전 버전 값을 읽고 중복된 버전 값으로 덮어쓰려고 시도해도, UPDATE 시점에 버전이 맞지 않으면 실패하므로 어플리케이션에서 재시도 로직 처리
+   - 즉, 나중에 커밋하는 트랜잭션이 `UPDATE ~~ WHERE version = 이전 버전`을 할 때 이미 version 값은 이전 트랜잭션의 커밋에 의해 증가된 상태이므로 해당 `이전 버전`인 version 값을 가진 데이터는 존재하지 않게 된다. 따라서 `0 rows effected`와 같은 에러를 받고 트랜잭션은 롤백될 것이다.
 
 3. Isolation Level을 Serializable로 상향
    - 가장 강력하지만, 쿼리가 거의 직렬화되어 성능 손해를 많이 보게 됨
+      - 이것도 구현마다 다른데, MySQL은 SELECT까지도 락을 걸어 정말 직렬화가 되지만, PostgreSQL은 이렇게까지 하지는 않고 내부적으로 충돌이 일어날 때만 abort를 해서 그렇게 느려지진 않다고 함
 
 ## 결론
 
