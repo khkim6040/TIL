@@ -148,4 +148,89 @@ MariaDB [(none)]> SHOW PROCESSLIST;
 ```
 
 ### 커넥션이 바로 줄어들 수 있었던 이유
-커넥션 상방 제한을 둔 뒤 dev에 반영했을 때 바로 커넥션이 줄어들었던 이유는 기존 커넥션 풀에서 idle 상태인 커넥션은 일정 시간 뒤 자동으로 정리하기 때문이다. dev 서버는 요청이 거의 없어 대부분 idle 이기 떄문에 즉시 회수가 가능했다. 만약 풀 몇 개가 사용 중인 prod 서버였다면 커넥션이 바로 1로 줄어들지 않았을 것이다.
+커넥션 상방 제한을 둔 뒤 dev에 반영했을 때 바로 커넥션이 줄어들었던 이유는 기존 커넥션 풀에서 idle 상태인 커넥션은 일정 시간 뒤 자동으로 정리하기 때문이다. dev 서버는 요청이 거의 없어 대부분 idle 이기 때문에 즉시 회수가 가능했다. 만약 풀 몇 개가 사용 중인 prod 서버였다면 커넥션이 바로 1로 줄어들지 않았을 것이다.
+
+## 해결 됐다고 생각했는데.. 
+또 다른 문제가 있었다. 
+connection size를 1로 줄였던 개발서버 두 개 중 하나가 묵묵부답을 하는 문제가 있었다. 문제는 DB connection의 제한이 1로 되어있어서 모종의 이유로 해당 커넥션이 blocked 되면 DB 상호작용을 하지 못해 응답도 할 수 없게 되는 문제였던 것으로 보인다. 커넥션 제한을 1에서 5로 늘려 [해결했다](https://github.com/PoApper/paxi-popo-nest-api/pull/159).
+
+이상한 점은 함께 connection size를 1로 줄였던 다른 개발서버는 정상적으로 응답을 해 줬다는 점이다. 왜 이럴까..
+
+### 원인은 트랜잭션
+정보 조회까지 잘 돌아가다가 방을 만드는 버튼을 눌렀을 때 서버가 먹통이 되었고, 잘 됐었던 정보 조회도 제대로 되지 않았었다. 방을 만드는 부분에서 문제가 발생하지 않았을까 생각했고, 방 만드는 로직을 살펴봤다.
+
+방 만드는 로직은 값 삽입이 여러 번 일어날 수 있으므로, 트랜잭션으로 변경 단위들을 하나로 묶어서 변경의 원자성(Atomicity)를 보장한다. 방과 관련 데이터를 삽입해서 두 가지 변경 사항을 안전하게 커밋한 후 방 데이터를 새로 조회한다.
+
+트랜잭션 내에서는  `queryRunner`로 연결된 단일 커넥션을 사용한다. 커넥션을 여러 개 만들지 않고, 단일 커넥션만 사용하므로 커넥션 제한이 1이더라도 정상적으로 작동할 것으로 보인다.
+
+```ts
+async create(userUuid: string, dto: CreateRoomDto) {
+    // 출발 시간 현재보다 이전인지 확인
+    if (new Date(dto.departureTime) < new Date()) {
+      throw new BadRequestException(
+        '출발 시간은 현재 시간보다 이전일 수 없습니다.',
+      );
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const room = await queryRunner.manager.save(Room, {
+        ...dto,
+        ownerUuid: userUuid,
+        roomUsers: [{ userUuid: userUuid }],
+      });
+
+      await queryRunner.manager.save(RoomUser, {
+        roomUuid: room.uuid,
+        userUuid: userUuid,
+      });
+
+      await queryRunner.commitTransaction();
+
+      return await this.findOneWithRoomUsers(room.uuid);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+```
+
+### 그런데 문제가 있다.
+혹시 위 코드에서 문제가 보였는가? 문제는 바로 커밋한 이후 커넥션을 `release()`하기 전에 DB 콜이 있을 수 있는 `findOneWithRoomUsers()`를 호출한다는 것이다. 아직 트랜잭션의 커넥션은 DB에서 해제되지 않은 상태이다. 그런데 `findOneWithRoomUsers()`에서 DB 콜을 하기 위해 커넥션을 만드려고 시도한다면? 커넥션 제한이 1이므로 생성되지 않고 기존 커넥션이 해제될 때까지 기다리게 될 것이다. 그러나, 기존 커넥션을 갖고 있는 트랜잭션 코드는 커넥션을 해제하기 위해 문제가 된 앞선 코드가 실행될 때까지 기다리게 된다. 데드락 같은 상황이 발생한 것이다!!
+
+
+실제로 `findOneWithRoomUsers()`에서는 `findOne()`으로 DB 콜을 한다. 
+
+```ts
+  async findOneWithRoomUsers(uuid: string): Promise<RoomWithUsersDto> {
+    const room = await this.roomRepo.findOne({
+      where: { uuid: uuid },
+      relations: ['roomUsers', 'roomUsers.user.nickname'],
+    });
+
+    if (!room) {
+      throw new NotFoundException('방이 존재하지 않습니다.');
+    }
+
+    let decryptedAccountNumber: string | undefined = undefined;
+    if (room.payerEncryptedAccountNumber) {
+      decryptedAccountNumber = this.userService.decryptAccountNumber(
+        room.payerEncryptedAccountNumber,
+      );
+    }
+    return new RoomWithUsersDto(room, decryptedAccountNumber);
+  }
+```
+
+
+문제가 명확해졌다. 왜 커넥션을 5로 늘렸을 때 문제가 해결되었는지도 알았다. 위 방을 만드는 로직이 실행되기 위해서는 커넥션이 최소 두 개 필요하기 때문이었다. 다른 서버의 API가 정상적으로 작동했던 이유도 그 서버는 커넥션을 최소 두 개 이상 필요로 하는 로직이 없어서였다.
+
+### 해결하려면?
+커넥션 수를 좀 넉넉하게 잡아주든가, API 콜이 단일 커넥션을 사용하도록 로직을 변경하는 식으로 해결할 수 있을 것 같다. 나는 커넥션 수를 좀 늘려줌으로써 해결했다.  
+문제가 되었던 로직을 고치려면 커밋 후 진행하는 READ를 트랜잭션 안으로 밀어넣어야 하는데 그게 더 나은 설계일까? 고민해 볼 문제다.
+
