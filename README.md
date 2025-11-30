@@ -29,3 +29,5 @@
 [N+1 문제란](what-is-n+1-problem.md)
 
 [MySQL vs MariaDB](mysql-vs-mariadb.md)
+
+[Too many connections](too-many-connections.md)
