@@ -4,66 +4,136 @@
 
 ### _계속 정리 중..._
 
-# v1
-I Kernels and Processes
-1 Introduction
-1.1 What Is An Operating System?
-1.1.1 Resource Sharing: Operating System as Referee
-1.1.2 Masking Limitations: Operating System as Illusionist
-1.1.3 Providing Common Services: Operating System as Glue
-1.1.4 Operating System Design Patterns
-1.2 Operating System Evaluation
-1.2.1 Reliability and Availability
-1.2.2 Security
-1.2.3 Portability
-1.2.4 Performance
-1.2.5 Adoption
-1.2.6 Design Tradeoffs
-1.3 Operating Systems: Past, Present, and Future
-1.3.1 Impact of Technology Trends
-1.3.2 Early Operating Systems
-1.3.3 Multi-User Operating Systems
-1.3.4 Time-Sharing Operating Systems
-1.3.5 Modern Operating Systems
-1.3.6 Future Operating Systems
+# I Kernels and Processes
+## 1 Introduction
+<p align="center">
+    <img src="assets/os/1/1-1.png" width=100% height=100% text-align=center />
+</p>
+간단한 웹 서버에 운영체제가 관여하는 바는 깊다. 
+- 웹서버가 받은 쿼리에 응답하는 어플리케이션과의 통신
+- 두 유저가 동시에 요청했을 때의 처리
+- 성능을 위해 응답의 복제본을 캐싱할 때, 어떻게 동시에 들어오는 여러 요청들에 일관적인 캐시 데이터를 보여줄 수 있을지
+- 커스텀을 위해 웹서버가 클라이언트에 실행 가능한 스크립트를 보내줄 때, 어떻게 클라이언트 입장에서 스크립트를 안전하게 실행할지
+- 웹페이지가 저장된 디스크에서 웹서버가 어떻게 이 파일의 위치를 특정해서 읽어올 수 있는지
+- 하드웨어를 변경했을 때, 웹서버 코드가 매 번 하드웨어에 맞춰 재작성 되어야 할 지
+
+### 1.1 What Is An Operating System?
+<p align="center">
+    <img src="assets/os/1/1-3.png" width=100% height=100% text-align=center />
+</p>
+운영체제는 유저와 하드웨어 사이에 위치해서 하드웨어를 제어하는 방식을 유저가 사용하기 편리하고 안전하게 노출하는 계층이다.  
+하드웨어는 atomic instruction, privilege level, MMU 같은 primitive를 제공하고, 운영체제는 이를 이용해 동기화와 fault isolation을 구현한다.
+
+보다시피 운영체제 계층은 크게 두 개로 나뉘는데, 하드웨어 추상화 계층(Hardware Abstraction Layer)과 커널-유저 인터페이스로 나뉜다. - 하드웨어 추상화 계층: ARM, AMD, Intel 등 다양한 하드웨어에서 노출하는 API를 감싸서 파일시스템, 네트워킹, 스레드 관련 함수가 하드웨어는 신경쓰지 않고 HAL에서 노출하는 API를 호출하기만 하면 되도록 하드웨어를 추상화해준다. 
+- 커널-유저 인터페이스: 유저 프로그램이 사용하는 기능들이 있다. 시스템 라이브러리가 해당 기능을 호출하고, 유저 프로그램은 시스템 라이브러리의 API를 호출함으로써 커널 영역을 건드릴 수 있게 된다. 
+
+#### 1.1.1 Resource Sharing: Operating System as Referee  
+운영체제는 단일 CPU로도 여러 프로그램을 동시에 돌아가게 해준다. 정확히는, 동시에 돌아가는 것처럼 보이게 한다. 이를 위해서 몇 가지를 수행한다.
+- 자원 할당: 여러 프로그램을 동시에 돌리기 위해서 한정된 자원을 효율적으로, 그리고 안전하게(악의적인 프로그램이 다른 프로그램에 영향을 미치지 못하게) 할당해줘야 한다.
+- 소통: 만약 여러 프로그램이 특정 목적을 위해 서로 소통해야 한다면, 그것도 가능하게 해 줘야 한다. 
+
+#### 1.1.2 Masking Limitations: Operating System as Illusionist  
+**가상화**를 통해 한정된 자원을 최대한 이용한다. 각 프로세스는 메모리, CPU 등 자신이 모든 하드웨어를 완전히 점유하고 있다고 생각함.   
+CPU, 메모리뿐만 아니라 소프트웨어적 도움을 통해 거의 대부분의 하드웨어는 가상화될 수 있다. 
+- 물리적 네트워크는 패킷 손실이 가능하지만 패킷 손실이 없음을 보장하는 가상화된 네트워크를 만들 수 있다(TCP).
+- 메모리 및 디스크는 각 하드웨어 특성에 따라 제각각의 단위와 방법으로 블럭을 읽고 출력하는데, 이를 다루기 용이한 byte-addressable 한 형태로 래핑해줄 수 있다.
+- 동일한 ISA 내에서 ABI를 통일함으로써, 하드웨어 내부 차이를 숨긴다. 덕분에 어플리케이션을 변경하지 않고 다양한 기기에서 돌아가게 할 수 있다. 애뮬레이션을 사용한다면 ARM, x86 같은 CPU 아키텍처도 가상화할 수 있다.
+
+위 모든 특성을 조합하면, **컴퓨터 그 자체를 가상화**할 수도 있다. OS(Guest OS)를 어플리케이션으로써 다른 OS(Host OS)위에서 돌아가게 만들 수 있다. 이를 **가상머신(Virtual Machine)**이라 부른다. Guest OS는 일반적인 운영체제처럼 자원을 할당하고 프로세스들을 스케줄링하지만, 이 OS가 사용하는 CPU, RAM, 디스크 등의 자원들은 모두 실제 물리적 자원이 아니고, Host OS에 의해 가상화된 자원들이다. 
+
+#### 1.1.3 Providing Common Services: Operating System as Glue
+아랫단의 복잡성을 가리고 프로그램이 사용할 API만 노출해 줘서, 다양한 하드웨어 위에서도 어플리케이션의 코드를 변경할 필요없게 해준다. 하드웨어 추상화 계층이 이 역할을 함.
+
+#### 1.1.4 Operating System Design Patterns
+Referee, Illusionist, Glue로 나뉘어지는 역할은 비단 OS 디자인에만 비유되지 않고, 다양한 도메인에 적용될 수 있다.
+
+<p align="center">
+    <img src="assets/os/1/1-6.png" width=100% height=100% text-align=center />
+</p>
+대표적인 예로 브라우저를 들 수 있다. 브라우저는 하나의 어플리케이션이지만, 이 또한 referee, illusionist, glue를 고려하여 설계되었다. 브라우저는 여러 탭을 열어둘 수 있으며, 본질적으로 스크립트를 동적으로 실행함으로써 실행되기 때문이다.
+- Referee: 여러 탭들 중 유저가 머물러 있는 탭에 어떻게 즉각적인 반응을 줘야한다. 악의적인 스크립트가 실행되면서 브라우저에 악영향을 끼치는 것을 막아야 한다(Sandboxing).
+- Illusionist: 분산된 웹 서버 환경에서 브라우저와 소통하던 웹 서버가 죽었을 때, 정상 작동하는 다른 웹 서버로 연결을 복구해야 한다. 그래서 유저는 기존 웹 서버가 죽은지 모르게 한다.
+- Glue: OS와 하드웨어 플랫폼에 상관없이 주어진 스크립트를 일관적으로 실행해서 유저에게 보여줘야 한다.
+
+<p align="center">
+    <img src="assets/os/1/1-7.png" width=100% height=100% text-align=center />
+</p>
+
+또한 DBMS가 있다. OS와 DBMS는 닮은점이 많다고 생각이 드는데, 디스크에 정보를 기록하는 형식이 거의 비슷하기 때문이다.
+
+
+- Referee: OS와 다르게 DBMS는 여러 유저가 동시에 사용할 수 있기에 이쪽의 동시성 이슈와 보안도 고려해야 한다. 
+- Illusionist: 명령을 수행하는 중에 하드웨어가 고장나더라도, **유저가 관찰하는 상태가 일관되도록** 해야한다.
+
+
+### 1.2 Operating System Evaluation
+운영체제가 잘 설계되었는지 평가하는 요소들이다. 이 요소들은 운영체제뿐만 아니라 다른 시스템 디자인의 평가 요소로도 쓰일 수 있다. 결국 다 돌고 돈다.
+
+#### 1.2.1 Reliability and Availability
+- Reliability(신뢰성): 의도된 대로 정확히 실행되었는지 
+운영체제와 같은 정밀한 시스템에서 신뢰성은 달성하기 매우 어려운데, 모든 컴포넌트가 맞물러 동작하기 때문이다. 하나만 잘못되어도 기대하던 동작이 불가능해지고 전반적인 시스템이 돌아가지 않게 한다. 신뢰성을 높이기 위해 일반적으로 테스트를 도입해서 코드가 기대하는 일반적인 경로와 결과를 따르도록 확인한다. 하지만, 운영체제와 같이 아주 복잡한 시스템에서는 아주 작은 취약점을 이용해서 일반적인 경로에서 벗어나 생각지 못한 경로를 실행하는 것으로 신뢰성을 망가뜨릴 수 있다. 
+
+_추가로 찾아본 부분_: 일반적인 경로에서 벗어나 취약점을 공략하는 예시로 리눅스의 Dirty COW 취약점이 있다. 이는 Copy On Write(COW), mmap, 멀티스레드 상황을 이용해 의도적으로 경합 조건을 만들어 읽기 전용 파일을 수정할 수 있게 되는 취약점이다. [참고](https://blog.naver.com/skinfosec2000/220931851792)
+
+- Availability(가용성): 시스템이 사용 가능한 정도
+책에서는 가용성을 유저의 입력에 대응하는 척도로 보았다. 즉, 시스템이 해킹되어서 신뢰할 수 없어져도 유저의 입력에 반응한다면 가용성이 있다고 본다. 분산 시스템에서는 가용성이 유저의 요청에 최신의 데이터일 필요 없이 응답 자체를 내뱉을 수 있는지 여부(CAP theorem의 A)인데, 이와 비슷한 개념으로 봐도 될 것 같다. 
+
+시스템이 고장나면 가용성은 줄어든다. 시스템이 켜져있는 상태가 지속될수록 가용성이 높아지므로, 가용성은 시스템이 얼마나 자주 고장나는지 - mean time to failure(MTTF), 그리고 얼마나 빨리 복구되는지 - mean time to repair(MTTR)을 가용성을 판단하는 척도로 사용한다.
+
+#### 1.2.2 Security
+컴퓨터의 작동이 악의적인 사용자에게 공격되지 않게 해야한다. 그러나 모든 컨퓨터 시스템은 보안 상 완벽하지 않다. 특히, 운영체제처럼 복잡한 시스템은 더욱 그렇다. 
+
+그럼에도 불구하고, 운영체제는 Fault Isolation(결함 격리)을 통해 최대한 악의적인 공격이 시스템 전체를 망가뜨리지 않도록 한다. 결함 격리는 신뢰할 수 없는 스크립트를 가상화된 머신에서 실행시켜서 최악의 경우에 가상화된 머신만 해킹되도록 한다. 다만, 모든 프로세스를 격리해서 실행하면 프로세스 간 통신을 하지 못한다. 이를 가능하게 하기 위해 어떤 프로그램은 어떤 공유 데이터에 접근/변경할 수 있는지 등의 보안 정책을 유지한다. 이 보안 정책에 문제가 있다면 악용되어 시스템을 해킹하는데 사용될 수 있다. 공격 면적을 최대한 줄여야 하겠다.
+
+#### 1.2.3 Portability
+#### 1.2.4 Performance
+#### 1.2.5 Adoption
+#### 1.2.6 Design Tradeoffs
+### 1.3 Operating Systems: Past, Present, and Future
+#### 1.3.1 Impact of Technology Trends
+#### 1.3.2 Early Operating Systems
+#### 1.3.3 Multi-User Operating Systems
+#### 1.3.4 Time-Sharing Operating Systems
+#### 1.3.5 Modern Operating Systems
+#### 1.3.6 Future Operating Systems
 Exercises
-2 The Kernel Abstraction
-2.1 The Process Abstraction
-2.2 Dual-Mode Operation
-2.2.1 Privileged Instructions
-2.2.2 Memory Protection
-2.2.3 Timer Interrupts
-2.3 Types of Mode Transfer
-2.3.1 User to Kernel Mode
-2.3.2 Kernel to User Mode
-2.4 Implementing Safe Mode Transfer
-2.4.1 Interrupt Vector Table
-2.4.2 Interrupt Stack
-2.4.3 Two Stacks per Process
-2.4.4 Interrupt Masking
-2.4.5 Hardware Support for Saving and Restoring Registers
-2.5 Putting It All Together: x86 Mode Transfer
-2.6 Implementing Secure System Calls
-2.7 Starting a New Process
-2.8 Implementing Upcalls
-2.9 Case Study: Booting an Operating System Kernel
-2.10 Case Study: Virtual Machines
-2.11 Summary and Future Directions
-Exercises
-3 The Programming Interface
-3.1 Process Management
-3.1.1 Windows Process Management
-3.1.2 UNIX Process Management
-3.2 Input/Output
-3.3 Case Study: Implementing a Shell
-3.4 Case Study: Interprocess Communication
-3.4.1 Producer-Consumer Communication
-3.4.2 Client-Server Communication
-3.5 Operating System Structure
-3.5.1 Monolithic Kernels
-3.5.2 Microkernel
-3.6 Summary and Future Directions
-Exercises
+## 2 The Kernel Abstraction
+### 2.1 The Process Abstraction
+### 2.2 Dual-Mode Operation
+#### 2.2.1 Privileged Instructions
+#### 2.2.2 Memory Protection
+#### 2.2.3 Timer Interrupts
+### 2.3 Types of Mode Transfer
+#### 2.3.1 User to Kernel Mode
+#### 2.3.2 Kernel to User Mode
+### 2.4 Implementing Safe Mode Transfer
+#### 2.4.1 Interrupt Vector Table
+#### 2.4.2 Interrupt Stack
+#### 2.4.3 Two Stacks per Process
+#### 2.4.4 Interrupt Masking
+#### 2.4.5 Hardware Support for Saving and Restoring Registers
+### 2.5 Putting It All Together: x86 Mode Transfer
+### 2.6 Implementing Secure System Calls
+### 2.7 Starting a New Process
+### 2.8 Implementing Upcalls
+### 2.9 Case Study: Booting an Operating System Kernel
+### 2.10 Case Study: Virtual Machines
+### 2.11 Summary and Future Directions
+### Exercises
+## 3 The Programming Interface
+### 3.1 Process Management
+#### 3.1.1 Windows Process Management
+#### 3.1.2 UNIX Process Management
+### 3.2 Input/Output
+### 3.3 Case Study: Implementing a Shell
+### 3.4 Case Study: Interprocess Communication
+#### 3.4.1 Producer-Consumer Communication
+#### 3.4.2 Client-Server Communication
+### 3.5 Operating System Structure
+#### 3.5.1 Monolithic Kernels
+#### 3.5.2 Microkernel
+### 3.6 Summary and Future Directions
+### Exercises
 
 # v2
 
@@ -458,7 +528,7 @@ A. 트랜잭션을 진행하면서 로그의 양을 줄임으로써 해결한다
 > 트랜잭션 실행 -> 로그 기록 -> Commit -> (시간차) Write back -> Garbage collection 가능
 
 <p align="center">
-    <img src="assets/transactional-log-structure.png" width=100% height=100% text-align=center />
+    <img src="/assets/transactional-log-structure.png" width=100% height=100% text-align=center />
 </p>
 
 위와 같이 메모리에서 log head, log tail 포인터를 관리한다. 종종 메모리의 log head 포인터를 디스크의 것과 동기화시킨다. 이 때 가비지 콜렉터는 디스크의 log head 포인터 이전의 공간을 메모리에서 안전하게 해제할 수 있다. 
