@@ -7,9 +7,13 @@
     - DBMS: 데이터 블럭을 관리하기 위한 B-Tree
     - 파일시스템: inode를 관리하기 위한 B-Tree
 2. DBMS와 파일 시스템은 모두 버퍼가 있어 캐싱을 한다.
+    - DBMS의 Buffer Pool vs OS의 Page Cache: 메모리 관리 전략의 유사성
 3. DBMS과 파일시스템 모두 페이지를 할당해 사용하고 반환할 수 있다.
 4. 데이터 영속성을 위해 트랜잭션을 지원한다.
-5. 디스크에 저장된 데이터를 사용하기 좋게 가공해서 제공한다
+    - Atomic Operation: 둘 다 All-or-Nothing 보장
+5. DBMS의 Lock Manager vs OS의 Synchronization Primitives: 동시성 제어 메커니즘
+6. WAL (Write-Ahead Logging) vs OS의 Journaling File System: 복구 메커니즘의 유사성
+7. 디스크에 저장된 데이터를 사용하기 좋게 가공해서 제공한다
     - DBMS: Database, Table(row, column)
     - 파일 시스템: 계층형 디렉토리
 
