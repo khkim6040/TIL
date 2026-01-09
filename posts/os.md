@@ -7,7 +7,7 @@
 # I Kernels and Processes
 ## 1 Introduction
 <p align="center">
-    <img src="/assets/os/1/1-1.png" width=100% height=100% text-align=center />
+    <img src="/assets/os/1/1-1.png" width=50% height=50% text-align=center />
 </p>
 간단한 웹 서버에 운영체제가 관여하는 바는 깊다. 
 - 웹서버가 받은 쿼리에 응답하는 어플리케이션과의 통신
@@ -19,7 +19,7 @@
 
 ### 1.1 What Is An Operating System?
 <p align="center">
-    <img src="/assets/os/1/1-3.png" width=100% height=100% text-align=center />
+    <img src="/assets/os/1/1-3.png" width=50% height=50% text-align=center />
 </p>
 운영체제는 유저와 하드웨어 사이에 위치해서 하드웨어를 제어하는 방식을 유저가 사용하기 편리하고 안전하게 노출하는 계층이다.  
 하드웨어는 atomic instruction, privilege level, MMU 같은 primitive를 제공하고, 운영체제는 이를 이용해 동기화와 fault isolation을 구현한다.
@@ -49,7 +49,7 @@ CPU, 메모리뿐만 아니라 소프트웨어적 도움을 통해 거의 대부
 Referee, Illusionist, Glue로 나뉘어지는 역할은 비단 OS 디자인에만 비유되지 않고, 다양한 도메인에 적용될 수 있다.
 
 <p align="center">
-    <img src="/assets/os/1/1-6.png" width=100% height=100% text-align=center />
+    <img src="/assets/os/1/1-6.png" width=50% height=50% text-align=center />
 </p>
 대표적인 예로 브라우저를 들 수 있다. 브라우저는 하나의 어플리케이션이지만, 이 또한 referee, illusionist, glue를 고려하여 설계되었다. 브라우저는 여러 탭을 열어둘 수 있으며, 본질적으로 스크립트를 동적으로 실행함으로써 실행되기 때문이다.
 - Referee: 여러 탭들 중 유저가 머물러 있는 탭에 어떻게 즉각적인 반응을 줘야한다. 악의적인 스크립트가 실행되면서 브라우저에 악영향을 끼치는 것을 막아야 한다(Sandboxing).
@@ -57,7 +57,7 @@ Referee, Illusionist, Glue로 나뉘어지는 역할은 비단 OS 디자인에�
 - Glue: OS와 하드웨어 플랫폼에 상관없이 주어진 스크립트를 일관적으로 실행해서 유저에게 보여줘야 한다.
 
 <p align="center">
-    <img src="/assets/os/1/1-7.png" width=100% height=100% text-align=center />
+    <img src="/assets/os/1/1-7.png" width=50% height=50% text-align=center />
 </p>
 
 또한 DBMS가 있다. OS와 DBMS는 닮은점이 많다고 생각이 드는데, 디스크에 정보를 기록하는 형식이 거의 비슷하기 때문이다.
@@ -263,7 +263,7 @@ DB, Garbage Collector, Sandbox 등 많은 어플리케이션들은 메모리 기
 # v4 Persistent Storage
 
 ## File Systems: Introduction and Overview
-disk와 같은 non-volatile storage는 random access가 안 됨. bulk로 가져와야 함. 물리적으로 모터를 움직여야 함. 디스크 random access 시간(=10ms) >>> DRAM 시간(=100ns)
+disk와 같은 non-volatile storage는 random access가 안 됨. bulk로 가져와야 함. 물리적으로 모터를 움직여야 함. 디스크 random access 시간(=10ms) >>> DRAM 시간(=50ns)
 지속되어야 하는 데이터는 disk에 넣어야 하는데 사용자가 다루기 쉬운 구조, 디스크 접근을 최소화 한 운영체제의 기능이 파일 시스템임 
 
 File: 이름붙여진 데이터들의 집합. 걍 임의의 길이의 바이트 배열임. 
@@ -297,7 +297,7 @@ _Challenge: device driver reliability_
 하드웨어는 메모리와 구조부터 다르다. byte addressable도 아니다. 어떻게 디바이스 드라이버는 하드웨어에 엑세스하고 CPU, 메모리와 소통할 수 있을까? 세 가지 방법 덕분에 가능하다. 
 ### Memory-mapped I/O.
 <p align="center">
-    <img src="/assets/io-device.png" width=100% height=100% text-align=center />
+    <img src="/assets/io-device.png" width=50% height=50% text-align=center />
 </p>
 디바이스 드라이버는 위 사진처럼 I/O Bus와 Memory Bus 두 버스와 연결되어있다. 그래서 하드웨어에서 버스 트래픽이 발생하면 그에 맞는 디바이스 드라이버가 작업을 해서 메모리 버스에 신호를 보내주는 식이다. 
 그렇다면 어떻게 CPU는 하드웨어 신호를 인지할 수 있을까?
@@ -372,7 +372,7 @@ Exercises
 directories, index structures, free space maps, and locality heuristics 네 가지 테크닉을 사용한다.
 
 <p align="center">
-    <img src="/assets/file-systems-map.png" width=100% height=100% text-align=center />
+    <img src="/assets/file-systems-map.png" width=50% height=50% text-align=center />
 </p>
 
 directories와 index structures는 file name을 물리 디스크 블락으로 매핑시켜주는 데 사용된다.
@@ -427,7 +427,7 @@ In total, ~= 256.5 TB
 이므로 많은 데이터를 쓰더라도 random access를 피하는 것이 더 나음. 
 
 <p align="center">
-    <img src="/assets/COW-inode-write.png" width=100% height=100% text-align=center />
+    <img src="/assets/COW-inode-write.png" width=50% height=50% text-align=center />
 </p>
 
 ### ZFS
@@ -435,7 +435,7 @@ COW를 구현한 파일 시스템 오픈소스
 
 #### ZFS index structures
 <p align="center">
-    <img src="/assets/zfs-update.png" width=100% height=100% text-align=center />
+    <img src="/assets/zfs-update.png" width=50% height=50% text-align=center />
 </p>
 
 Q. 위 사진과 같이 하나의 블럭 write가 일어나면 모든 부모가 새롭게 써지는 블럭 이외 다른 블럭으로 포인터는 유지한 채로 새로운 위치에 써진다. 그렇다는 말은 기존 부모의 값들을 디스크에서 읽어야 하지 않을까? 즉, COW 과정에서 random read 가 많이 일어나지 않나?
@@ -457,7 +457,7 @@ ZFS에서는 비트맵 크기, free의 랜덤 disk 엑세스 문제를 해결하
 13.4 Putting It All Together: File and Directory Access
 일반적인 inode 파일 구조에서 특정 파일(`/foo/bar/baz`)을 읽기까지의 과정을 생각해보자. 이름: inode number 매핑을 생각하면서 진행하면 된다. inode 파일을 읽고, 거기에 있는 파일 블럭 포인터를 읽은 후 그 쪽 파일을 읽는다. 만약, 파일이라면 내용이 써져 있을 것이고, 디렉토리라면 name: inode number 매핑이 저장되어 있을 것이다. 이렇게 쭉쭉 따라가면 된다.
 <p align="center">
-    <img src="/assets/file-system-example.png" width=100% height=100% text-align=center />
+    <img src="/assets/file-system-example.png" width=50% height=50% text-align=center />
 </p>
 root 폴더는 inode number = 2로 고정되어 있으니
 
@@ -467,7 +467,7 @@ Exercises
 
 
 14 Reliable Storage
-지금까지는 하드웨어는 100% 데이터를 영구적으로 안전하게 보유할 수 있다고 생각했다. 그런게 어떻게 이것이 가능할까? 이제부터 그것을 알아보자. 
+지금까지는 하드웨어는 50% 데이터를 영구적으로 안전하게 보유할 수 있다고 생각했다. 그런게 어떻게 이것이 가능할까? 이제부터 그것을 알아보자. 
 Reliability: 의도한 기능을 할 수 있는지, 하드웨어의 경우 데이터를 읽어들이고 작성할 수 있는지 여부 <- 우리가 알아볼 부분
 Availability: 요청에 빠르게 응답할 수 있는지, 이 경우 I/O 요청에 얼마나 빠르게 응답하는지 여부
 
@@ -529,7 +529,7 @@ A. 트랜잭션을 진행하면서 로그의 양을 줄임으로써 해결한다
 > 트랜잭션 실행 -> 로그 기록 -> Commit -> (시간차) Write back -> Garbage collection 가능
 
 <p align="center">
-    <img src="/assets/transactional-log-structure.png" width=100% height=100% text-align=center />
+    <img src="/assets/transactional-log-structure.png" width=50% height=50% text-align=center />
 </p>
 
 위와 같이 메모리에서 log head, log tail 포인터를 관리한다. 종종 메모리의 log head 포인터를 디스크의 것과 동기화시킨다. 이 때 가비지 콜렉터는 디스크의 log head 포인터 이전의 공간을 메모리에서 안전하게 해제할 수 있다. 
