@@ -4,11 +4,70 @@
 
 ### _계속 정리 중..._
 
-v1
+# v1
+I Kernels and Processes
+1 Introduction
+1.1 What Is An Operating System?
+1.1.1 Resource Sharing: Operating System as Referee
+1.1.2 Masking Limitations: Operating System as Illusionist
+1.1.3 Providing Common Services: Operating System as Glue
+1.1.4 Operating System Design Patterns
+1.2 Operating System Evaluation
+1.2.1 Reliability and Availability
+1.2.2 Security
+1.2.3 Portability
+1.2.4 Performance
+1.2.5 Adoption
+1.2.6 Design Tradeoffs
+1.3 Operating Systems: Past, Present, and Future
+1.3.1 Impact of Technology Trends
+1.3.2 Early Operating Systems
+1.3.3 Multi-User Operating Systems
+1.3.4 Time-Sharing Operating Systems
+1.3.5 Modern Operating Systems
+1.3.6 Future Operating Systems
+Exercises
+2 The Kernel Abstraction
+2.1 The Process Abstraction
+2.2 Dual-Mode Operation
+2.2.1 Privileged Instructions
+2.2.2 Memory Protection
+2.2.3 Timer Interrupts
+2.3 Types of Mode Transfer
+2.3.1 User to Kernel Mode
+2.3.2 Kernel to User Mode
+2.4 Implementing Safe Mode Transfer
+2.4.1 Interrupt Vector Table
+2.4.2 Interrupt Stack
+2.4.3 Two Stacks per Process
+2.4.4 Interrupt Masking
+2.4.5 Hardware Support for Saving and Restoring Registers
+2.5 Putting It All Together: x86 Mode Transfer
+2.6 Implementing Secure System Calls
+2.7 Starting a New Process
+2.8 Implementing Upcalls
+2.9 Case Study: Booting an Operating System Kernel
+2.10 Case Study: Virtual Machines
+2.11 Summary and Future Directions
+Exercises
+3 The Programming Interface
+3.1 Process Management
+3.1.1 Windows Process Management
+3.1.2 UNIX Process Management
+3.2 Input/Output
+3.3 Case Study: Implementing a Shell
+3.4 Case Study: Interprocess Communication
+3.4.1 Producer-Consumer Communication
+3.4.2 Client-Server Communication
+3.5 Operating System Structure
+3.5.1 Monolithic Kernels
+3.5.2 Microkernel
+3.6 Summary and Future Directions
+Exercises
 
-v2
+# v2
 
-v3
+# v3
 # 9.
 With a high-speed local area network such as a data
 center, the latency to fetch a page of data from the memory of a nearby computer is
