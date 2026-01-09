@@ -9,7 +9,7 @@ ERROR 1040 (08004): Too many connections
 ```
 
 <p align="center">
-    <img src="assets/db-connections.png" width=80% height=50% text-align=center />
+    <img src="/assets/db-connections.png" width=80% height=50% text-align=center />
 </p>
 
 모니터링을 보니 커넥션 수가 20 언저리에서 29까지 올라간 뒤 더 이상 늘어나지 않고 있었다. DB 인스턴스의 최대 커넥션 한계에 도달해 새로운 연결이 차단된 것으로 보인다.
@@ -85,7 +85,7 @@ extra: {
 [PR1](https://github.com/PoApper/paxi-popo-nest-api/pull/157), [PR2](https://github.com/PoApper/popo-nest-api/pull/181)
 
 <p align="center">
-    <img src="assets/connection-decreased.png" width=80% height=50% text-align=center />
+    <img src="/assets/connection-decreased.png" width=80% height=50% text-align=center />
 </p>
 
 Dev 컨테이너 두 개에 적용하자 커넥션 수가 **29개에서 19개로 감소**했다. 각 dev 서버가 10개씩 사용하던 커넥션을 1개씩만 사용하게 되면서 약 18개의 커넥션이 해제된 것이다. 이제 DB 인스턴스에 접속할 수 있다!!!
