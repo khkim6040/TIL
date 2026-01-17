@@ -6,6 +6,16 @@
 
 # I Kernels and Processes
 ## 1 Introduction
+### 핵심 질문들
+Q. Operating System Definition. What is an operating system, and what does it do?
+A. 유저 프로그램과 하드웨어를 이어주는 소프트웨어. 여러 유저 프로그램이 하드웨어에서 안전하고 효율적으로 함께 돌아갈 수 있게 해준다.
+Q. Operating System Evaluation. What design goals should we look for in an operating
+system? 
+A. 자원을 효율적으로, 공정하게 어플리케이션들에게 잘 나눠주는지(효율성, 공정성). 어플리케이션들이 안전하게 실행되어 서로에게 영향을 미치지 않는지(격리/보안). 어플리케이션과 하드웨어가 서로 존재를 모른 채로 각자 독립적으로 개발이 가능할지(추상화/이식성). 시스템이 장애에 잘 대응하고 오랫동안 안정적으로 동작하는지(신뢰성). 실제 워크로드에서 충분한 처리량 및 지연 시간을 보장하는지(성능). 그리고 사용자가 사용·관리하기 쉬운지(사용 편의성).
+Q. Operating Systems: Past, Present, and Future. How have operating systems
+evolved, and what new functionality are we likely to see in future operating systems?
+A. 한 타임에 하나의 프로그램만 실행 가능하던 상황에서 동시에 여러 가지 프로그램을 안전하고 효율적으로 실행시켜주는 상황까지 이름. 하드웨어가 발달하며 규모가 커지면서 생기는 상황(대규모 서버, 클러스터, 데이터 웨어하우스 등)을 조율하는 추상화된 운영체제로 흘러감.
+
 <p align="center">
     <img src="/assets/os/1/1-1.png" width=50% height=50% text-align=center />
 </p>
@@ -138,6 +148,41 @@ _라고 했는데 이 발언은 확실하지 않은 정보인 것 같다._
 하드웨어와 운영체제는 밀접하게 연결되어 있어서 발전을 함께한다. 대규모 서버, 멀티코어, 종류가 다른 하드웨어(메모리, CPU 등) 등등 하드웨어의 규모가 커지면서 생기는 새로운 개념과 문제들을 해결하는 운영체제가 필요할 것이다.
 
 ## 2 The Kernel Abstraction
+### 핵심 질문들 _TODO: 2장 다 정리하고 작성할것임_
+Q. The Process Abstraction. What is a process and how does it differ from a program?
+A.
+
+Q. Dual-Mode Operation. What hardware enables the operating system to efficiently implement the process abstraction? 
+A.
+
+Q. Types of Mode Transfer. What causes the processor to switch control from a user-level program to the kernel? 
+A.
+
+Q. Implementing Safe Mode Transfer. How do we safely switch between user level and the kernel? 
+A.
+
+Q. Putting It All Together: x86 Mode Transfer. What happens on an x86 mode switch?
+A.
+
+Q. Implementing Secure System Calls. How do library code and the kernel work together to implement protected procedure calls from the application into the kernel?
+A. 
+
+Q. Starting a New Process. How does the operating system kernel start a new process?
+A. 
+
+Q. Implementing Upcalls. How does the operating system kernel deliver an asynchronous event to a user process?
+A. 
+
+Q. Case Study: Booting an OS Kernel. What steps are needed to start running an operating system kernel, to the point where it can create a process?
+A. 
+
+Q. Case Study: Virtual Machines. Can an operating system run inside a process?
+A. 
+
+신뢰성, 보안, 자원의 분배 등 운영체제의 목적을 달성하기 위해 운영체제는 실행되는 어플리케이션들을 자원의 입장에서 고립시켜야 한다. 그리고 그 행위를 하는 주체를 **커널**이라 부른다. 커널은 시스템의 가장 아랫단에서 실행되는 소프트웨어로, 하드웨어에 전적으로 접근할 수 있다. 커널은 자원들을 어플리케이션에 제한적으로 제공해주는 주체이다. 
+
+**프로세스**는 커널에 의해 실행 중인 프로그램의 하나의 인스턴스로서, 고유한 가상 주소 공간(코드, 데이터, 스택, 힙)과 레지스터, 프로그램 카운터 등의 실행 문맥을 포함하는 추상화이다. 커널은 이러한 프로세스마다 CPU 시간, 메모리, I/O 등 자원을 제한적으로 할당하고 관리한다. 프로세스가 안전하게 실행될 수 있도록 커널만 신경쓰지 않는다. 커널의 부담을 덜어주기 위해 하드웨어도 이상 행위가 발생하면 커널에 알려줌으로써 거들어준다. 
+
 ### 2.1 The Process Abstraction
 ### 2.2 Dual-Mode Operation
 #### 2.2.1 Privileged Instructions
