@@ -266,6 +266,12 @@ A.
 하드웨어의 제한된 공간에 마스킹 된 인터럽트 정보가 저장된다. 따라서 오랫동안 마스킹 된 인터럽트를 처리하지 못한다면, 인터럽트가 유실될 수 있다. 따라서 인터럽트를 비활성화하는 시간은 짧아야 한다. 이를 위해 인터럽트 핸들러를 top, bottom halves 두 가지로 나누어 실행한다. 여기서 bottom half는 하드웨어에 의해 직접 호출되는 짧은 핸들러이며, top half는 이후 커널 스케줄링에 의해 실행되는 지연 처리 루틴이다.bottom half는 인터럽트가 비활성화 된 상태에서 저장해야 할 필수 상태 및 top half 핸들러 처리가 필요하다는 기록만 하고 끝난다. 나중에 top half가 실행될 때는 인터럽트를 따로 비활성화하지 않고 커널 핸들러 코드를 실행한다. 이 때는 다른 인터럽트가 발생해도 안전하게 다시 top half 핸들러로 돌아올 수 있다.
 
 #### 2.4.5 Hardware Support for Saving and Restoring Registers
+앞서 말했듯 유저 <-> 커널 모드 간 전환될 때 프로세스의 상태 저장은 하드웨어와 커널 둘이서 협력해 진행한다. 커널이 모두 저장하면 되지 굳이 하드웨어의 도움을 받는 이유는 커널 코드가 실행되기 전에 PC, stack pointer 등 최소한의 프로세스 상태를 안전하게 저장해야 하기 때문이다. 커널 코드가 실행되기 전에는 커널이 직접 레지스터를 저장할 수 없기 때문에, 하드웨어가 모드 전환 과정에서 최소한의 레지스터를 먼저 저장한다.
+
+따라서, 하드웨어는 모드 전환 시 유저 프로세스의 PC, stack pointer 값과 브랜칭에 필요한 정보를 담은 processor status word(아키텍처에 따라 RFLAGS, CPSR 등)를 커널 스택에 저장하고 커널 핸들러로 차례를 넘긴다. 이후 핸들러가 진행하기 전 아직 저장하지 못한 일반 목적 레지스터 값들을 저장한다. 
+
+x86 아키텍처는 커널 핸들러가 사용하기 좋은 하드웨어 레벨 명령어를 제공한다. `pushad`(push all double, 32-bit x86 기준)로 일반 목적 레지스터를 스택에 저장할 수 있고, `popad`로 저장했던 레지스터 값들을 복원한 후, `iret`(return from interrupt)로 CPU가 저장했던 PC, stack pointer 등을 복구한다.
+
 ### 2.5 Putting It All Together: x86 Mode Transfer
 ### 2.6 Implementing Secure System Calls
 ### 2.7 Starting a New Process
