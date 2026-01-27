@@ -270,7 +270,14 @@ A.
 
 따라서, 하드웨어는 모드 전환 시 유저 프로세스의 PC, stack pointer 값과 브랜칭에 필요한 정보를 담은 processor status word(아키텍처에 따라 RFLAGS, CPSR 등)를 커널 스택에 저장하고 커널 핸들러로 차례를 넘긴다. 이후 핸들러가 진행하기 전 아직 저장하지 못한 일반 목적 레지스터 값들을 저장한다. 
 
-x86 아키텍처는 커널 핸들러가 사용하기 좋은 하드웨어 레벨 명령어를 제공한다. `pushad`(push all double, 32-bit x86 기준)로 일반 목적 레지스터를 스택에 저장할 수 있고, `popad`로 저장했던 레지스터 값들을 복원한 후, `iret`(return from interrupt)로 CPU가 저장했던 PC, stack pointer 등을 복구한다.
+x86 아키텍처는 커널 핸들러가 사용하기 좋은 하드웨어 레벨 명령어를 제공한다. `pushad`(push all double, 32-bit x86 기준)로 일반 목적 레지스터를 스택에 저장할 수 있고, `popad`로 저장했던 레지스터 값들을 복원한 후, `iret`(return from interrupt)로 CPU가 저장했던 PC, stack pointer 등을 복구한다. 
+
+인터럽트가 발생했을 때 레지스터 저장 및 복구 과정은 아래와 같다. 
+1. 인터럽트 발생 시 CPU가 자동으로 최소한의 레지스터 정보 EFLAGS, CS, EIP, (경우에 따라) SS, ESP를 스택에 저장
+2. 커널 핸들러 진입 후 `pushad`로 범용 레지스터 저장
+3. 핸들러 로직 실행
+4. 복귀 전 `popad`로 범용 레지스터 복원
+5. `iret`로 CPU가 자동 저장한 값들(EFLAGS, CS, EIP 등) 복원 및 유저 모드로 복귀
 
 ### 2.5 Putting It All Together: x86 Mode Transfer
 ### 2.6 Implementing Secure System Calls
