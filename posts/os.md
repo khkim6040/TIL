@@ -148,36 +148,58 @@ _라고 했는데 이 발언은 확실하지 않은 정보인 것 같다._
 하드웨어와 운영체제는 밀접하게 연결되어 있어서 발전을 함께한다. 대규모 서버, 멀티코어, 종류가 다른 하드웨어(메모리, CPU 등) 등등 하드웨어의 규모가 커지면서 생기는 새로운 개념과 문제들을 해결하는 운영체제가 필요할 것이다.
 
 ## 2 The Kernel Abstraction
-### 핵심 질문들 _TODO: 2장 다 정리하고 작성할것임_
-Q. The Process Abstraction. What is a process and how does it differ from a program?
-A.
+### 핵심 질문들
+Q. **The Process Abstraction.** What is a process and how does it differ from a program?  
+A. 프로그램은 디스크에 저장된 정적인 코드와 데이터이고, 프로세스는 해당 프로그램이 메모리에 적재되어 독립적인 주소 공간과 실행 컨텍스트를 가진 채 실행 중인 상태이다.
 
-Q. Dual-Mode Operation. What hardware enables the operating system to efficiently implement the process abstraction? 
-A.
+Q. **Dual-Mode Operation.** What hardware enables the operating system to efficiently implement the process abstraction?  
+A. CPU에는 현재 실행 모드를 나타내는 특수 레지스터가 있으며, 이 값은 커널 또는 하드웨어에 의해서만 변경된다.
+유저 프로그램이 **특권 명령을 실행하거나 예외(page fault 등)가 발생하거나 인터럽트가 도착하면**, 하드웨어가 자동으로 커널 모드로 전환하고 커널로 제어를 넘긴다.
 
-Q. Types of Mode Transfer. What causes the processor to switch control from a user-level program to the kernel? 
-A.
+Q. **Types of Mode Transfer.** What causes the processor to switch control from a user-level program to the kernel?  
+A. 인터럽트, 예외, 시스템 콜
 
-Q. Implementing Safe Mode Transfer. How do we safely switch between user level and the kernel? 
-A.
+Q. **Implementing Safe Mode Transfer.** How do we safely switch between user level and the kernel?  
+A. 모드 전환은 하드웨어가 강제한다. 유저 소프트웨어는 커널 모드로의 전환이나 커널 진입 주소를 임의로 변경할 수 없다.
+하드웨어는 모드 전환, 레지스터 저장, 진입 주소 설정을 원자적으로 수행하여 중간 상태를 노출하지 않는다.
 
-Q. Putting It All Together: x86 Mode Transfer. What happens on an x86 mode switch?
-A.
-
-Q. Implementing Secure System Calls. How do library code and the kernel work together to implement protected procedure calls from the application into the kernel?
+Q. **Putting It All Together: x86 Mode Transfer.** What happens on an x86 mode switch?  
 A. 
+1. 유저 프로세스가 실행 중일 때는 유저 스택을 사용하고, 커널 스택은 해당 프로세스에 할당되어 있으나 사용되지 않는다.
+2. 인터럽트가 도착하면, 하드웨어는 인터럽트 벡터 테이블(IDT)을 참조해 적절한 커널 핸들러로 제어를 넘긴다.
+3. 커널은 그 시점부터 나머지 범용 레지스터를 저장한 뒤 핸들러 로직을 수행한다.
+4. 인터럽트 핸들러가 실행을 마친 후 커널은 저장했던 레지스터를 복구한 후, 특수 명령(`iret`)을 실행한다. 하드웨어가 자신이 저장했던 레지스터를 스스로 복구하고 모드를 전환한다.
+5. 인터럽트가 발생했던 당시의 유저 코드로 돌아와서 그대로 실행을 이어나감. 유저 프로세스는 자신이 중지되었는지 모른다.
 
-Q. Starting a New Process. How does the operating system kernel start a new process?
-A. 
+Q. **Implementing Secure System Calls.** How do library code and the kernel work together to implement protected procedure calls from the application into the kernel?  
+A. 시스템 콜은 보통 라이브러리 함수로 감싸 제공된다. 라이브러리는 시스템 콜 번호와 인자를 규약에 맞게 설정한 뒤 트랩 명령을 실행한다.
+실제 모드 전환과 레지스터 저장은 하드웨어와 커널이 수행하며, 라이브러리는 이를 직접 제어하지 않는다.
 
-Q. Implementing Upcalls. How does the operating system kernel deliver an asynchronous event to a user process?
+Q. **Starting a New Process.** How does the operating system kernel start a new process?  
 A. 
+- 프로그램을 위한 메모리(힙, 스택 등)를 할당한다.
+- 디스크에서 메모리로 프로그램을 올린다.
+- PCB를 생성하고, 초기 레지스터 상태(PC, SP 등)를 설정한 뒤 스케줄러를 통해 해당 PCB를 실행 대상으로 선택한다.
+    - 다만, 첫 번째 실행 때는 참고할 예전에 실행했던 코드가 없어서 참고할 주소가 없다. 이를 프로세스 본문을 **호출**하는 가짜 함수를 호출함으로써 대체한다. 자세한 건 아래 본문 참고
 
-Q. Case Study: Booting an OS Kernel. What steps are needed to start running an operating system kernel, to the point where it can create a process?
-A. 
+Q. **Implementing Upcalls.** How does the operating system kernel deliver an asynchronous event to a user process?  
+A. 유저 프로그램이 커널이 인지할 수 있는 다양한 이벤트(UNIX에서는 시그널이라 함)를 다루는 핸들러를 등록한다. 이벤트가 도착했을 때 커널은 이벤트가 발생했음을 기록한 뒤, 유저 모드로 복귀하는 과정에서 유저 스택과 레지스터 상태를 조작해 등록된 핸들러가 실행되도록 만든다.
 
-Q. Case Study: Virtual Machines. Can an operating system run inside a process?
-A. 
+Q. **Case Study: Booting an OS Kernel.** What steps are needed to start running an operating system kernel, to the point where it can create a process?  
+A. 운영체제를 실행시켜야 한다.
+1. CPU는 리셋 후 ROM의 정해진 주소에 매핑된 ROM 코드를 실행하며, 이 코드가 BIOS 역할을 수행한다.
+2. BIOS는 디스크에 있는 부트로더를 메모리로 올려 실행한다.
+3. 부트로더는 디스크에 저장된 운영체제 이미지를 메모리로 올려 실행한다.
+4. 운영체제가 실행되고 커널이 여러 프로세스를 실행할 수 있게 된다.
+
+Q. **Case Study: Virtual Machines.** Can an operating system run inside a process?  
+A. 운영체제는 프로세스를 관리하는 주체로서 프로세스 안해서 작동할 수 없다. 그러나 하드웨어 가상화를 통해 프로세스 안에서 돌아가는 것처럼 보이게 할 수는 있다.  
+가상 머신을 이용하면 운영체제는 하드웨어 가상화 계층 위에서 실행될 수 있다.  
+이 경우 게스트 운영체제는 자신이 하드웨어를 직접 제어하는 유일한 운영체제라고 가정하고 동작한다.  
+실제로는 호스트 운영체제 또는 하이퍼바이저가 하드웨어 가상화 기능을 이용해 게스트 운영체제의 특권 동작을 가로채거나, 안전한 경우 직접 실행하도록 제어한다.
+단, 컨테이너와 달리 가상 머신에서는 각 게스트가 독립적인 운영체제 커널을 가진다.
+
+---
 
 신뢰성, 보안, 자원의 분배 등 운영체제의 목적을 달성하기 위해 운영체제는 실행되는 어플리케이션들을 자원의 입장에서 고립시켜야 한다. 그리고 그 행위를 하는 주체를 **커널**이라 부른다. 커널은 시스템의 가장 아랫단에서 실행되는 소프트웨어로, 하드웨어에 전적으로 접근할 수 있다. 커널은 자원들을 어플리케이션에 제한적으로 제공해주는 주체이다. 
 
@@ -390,8 +412,6 @@ __왜 BIOS와 부트로더 두 개를 두는걸까?__
 
 호스트 운영체제는 이 시점에서 게스트의 레지스터 상태(PC, stack pointer 등)를 하드웨어가 제공하는 가상화 구조에 저장하고, 해당 동작을 에뮬레이션하거나 필요한 처리를 수행한 뒤 다시 게스트 운영체제로 제어를 돌려준다. 이 과정을 통해 게스트 운영체제는 자신이 모든 자원을 제어하고 있다고 착각한 채 실행을 이어간다.
 
-### 2.11 Summary and Future Directions
-### Exercises
 ## 3 The Programming Interface
 ### 3.1 Process Management
 #### 3.1.1 Windows Process Management
@@ -500,7 +520,7 @@ system services?
 
 - Multiple copies of the same page: 같은 내용의 페이지를 여러 개 두지 말고, 메모리 상에서 "단 하나"만 둔 채, 이를 사용할 예정의 페이지들이 해당 단 하나의 페이지를 참조하게 하고, write 가 일어날 때에야 새로운 공간에 작성함으로써 공간을 줄이는 방법
 - Compression of unused pages: 비슷한 내용을 가진 페이지들을 압축해서 메모리 사용량을 줄이는 방법. 비슷한 내용의 페이지가 두 개(A, B) 있을 때, 압축할 페이지(B)에서 원본 페이지(A)와 다른 부분을 빼내고 이 부분(B')만 따로 저장한다. 이후에 압축된 페이지가 참조될 때 원본 페이지(A)와 압축된 부분(B')을 사용해서 압축한 페이지(B)를 복원해서 사용한다.
-    - 이 방법이 효과적인 이유는 디스크로 내려가지 않고 메모리에서 압축 및 복원 작업을 수행하기 때문임. 메모리 공간이 부족해서 B 페이지가 디스크로 내려갔다면 B를 나중에 읽을 때 Disk I/O를 수행해야 하기 떄문
+    - 이 방법이 효과적인 이유는 디스크로 내려가지 않고 메모리에서 압축 및 복원 작업을 수행하기 때문임. 메모리 공간이 부족해서 B 페이지가 디스크로 내려갔다면 B를 나중에 읽을 때 Disk I/O를 수행해야 하기 때문
 
 
 ## Fault Tolerance. How can we make applications resilient to machine crashes?
