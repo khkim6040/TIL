@@ -413,6 +413,29 @@ __왜 BIOS와 부트로더 두 개를 두는걸까?__
 호스트 운영체제는 이 시점에서 게스트의 레지스터 상태(PC, stack pointer 등)를 하드웨어가 제공하는 가상화 구조에 저장하고, 해당 동작을 에뮬레이션하거나 필요한 처리를 수행한 뒤 다시 게스트 운영체제로 제어를 돌려준다. 이 과정을 통해 게스트 운영체제는 자신이 모든 자원을 제어하고 있다고 착각한 채 실행을 이어간다.
 
 ## 3 The Programming Interface
+__TODO 3장 다보고 채울예정__
+Q. **Process management.** What is the system call interface for process management?  
+A. 
+
+Q. Input/output. What is the system call interface for performing I/O and interprocess
+communication?  
+A. 
+
+Q. Case study: Implementing a shell. We will illustrate these interfaces by using them 
+to implement a user-level job control system called a shell.  
+A. 
+
+Q. Case study: Interprocess communication. How does the communication between a
+client and server work?  
+A. 
+
+Q. Operating system structure. Can we use the process abstraction to simplify the
+construction of the operating system itself and to make it more secure, more reliable,
+and more flexible?  
+A. 
+
+---
+
 ### 3.1 Process Management
 #### 3.1.1 Windows Process Management
 #### 3.1.2 UNIX Process Management
@@ -425,7 +448,6 @@ __왜 BIOS와 부트로더 두 개를 두는걸까?__
 #### 3.5.1 Monolithic Kernels
 #### 3.5.2 Microkernel
 ### 3.6 Summary and Future Directions
-### Exercises
 
 # v2
 
